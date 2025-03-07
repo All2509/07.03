@@ -1,12 +1,14 @@
 package jm.task.core.jdbc.service;
 
+import jm.task.core.jdbc.dao.UserDao;
 import jm.task.core.jdbc.dao.UserDaoJDBCImpl;
 import jm.task.core.jdbc.model.User;
+
 
 import java.util.List;
 
 public class UserServiceImpl implements UserService {
-    private final UserDaoJDBCImpl userDao = new UserDaoJDBCImpl();
+    UserDao userDao = new UserDaoJDBCImpl();
 
     @Override
     public void createUsersTable() {
@@ -20,7 +22,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void saveUser(String name, String lastName, byte age) {
-        userDao.saveUser(name, lastName, age); System.out.printf("User с именем %s добавлен в базу данных.%n", name);
+        userDao.saveUser(name, lastName, age);
+        //System.out.println("Пользователь с именем " + name + " добавлен в базу данных.");
+
     }
 
     @Override
