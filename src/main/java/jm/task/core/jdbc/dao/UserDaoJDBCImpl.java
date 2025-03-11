@@ -7,61 +7,70 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-// Обработка всех исключений, связанных с работой с базой данных должна находиться в dao
 public class UserDaoJDBCImpl implements UserDao {
     private static final Connection conn = Util.getConnection();
 
     public UserDaoJDBCImpl() {
-
+        // Отключение autocommit
+        try {
+            conn.setAutoCommit(false);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
-    // Создание таблицы для User(ов) – не должно приводить к исключению, если такая таблица уже существует
     public void createUsersTable() {
         try (Statement statement = conn.createStatement()) {
             statement.executeUpdate("CREATE TABLE IF NOT EXISTS users " +
                     "(id BIGINT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(255), last_name VARCHAR(255), age INT)");
+            conn.commit(); // Зафиксировать изменения
         } catch (SQLException e) {
+            rollback(); // Откат в случае ошибки
             e.printStackTrace();
         }
     }
 
-    // Удаление таблицы User(ов) – не должно приводить к исключению, если таблицы не существует
     public void dropUsersTable() {
         try (Statement statement = conn.createStatement()) {
             statement.executeUpdate("DROP TABLE IF EXISTS users");
+            conn.commit(); // Зафиксировать изменения
         } catch (SQLException e) {
+            rollback(); // Откат в случае ошибки
             e.printStackTrace();
         }
     }
 
-    // Добавление User в таблицу
     public void saveUser(String name, String lastName, byte age) {
         try (PreparedStatement pstm = conn.prepareStatement("INSERT INTO users (name, last_name, age) VALUES (?, ?, ?)")) {
             pstm.setString(1, name);
             pstm.setString(2, lastName);
             pstm.setByte(3, age);
             pstm.executeUpdate();
+            conn.commit(); // Зафиксировать изменения
+            System.out.println("User с именем " + name + " добавлен в базу данных."); // Вывод информации
         } catch (SQLException e) {
+            rollback(); // Откат в случае ошибки
             e.printStackTrace();
         }
     }
 
-    // Удаление User из таблицы ( по id )
     public void removeUserById(long id) {
         try (PreparedStatement pstm = conn.prepareStatement("DELETE FROM users WHERE id = ?")) {
             pstm.setLong(1, id);
             pstm.executeUpdate();
+            conn.commit(); // Зафиксировать изменения
+            System.out.println("User с id " + id + " удален из базы данных."); // Вывод информации
         } catch (SQLException e) {
+            rollback(); // Откат в случае ошибки
             e.printStackTrace();
         }
     }
 
-    // Получение всех User(ов) из таблицы
     public List<User> getAllUsers() {
         List<User> users = new ArrayList<>();
 
         try (ResultSet resultSet = conn.createStatement().executeQuery("SELECT * FROM users")) {
-            while(resultSet.next()) {
+            while (resultSet.next()) {
                 User user = new User(resultSet.getString("name"),
                         resultSet.getString("last_name"), resultSet.getByte("age"));
                 user.setId(resultSet.getLong("id"));
@@ -74,10 +83,20 @@ public class UserDaoJDBCImpl implements UserDao {
         return users;
     }
 
-    // Очистка содержания таблицы
     public void cleanUsersTable() {
         try (Statement statement = conn.createStatement()) {
             statement.executeUpdate("TRUNCATE TABLE users");
+            conn.commit(); // Зафиксировать изменения
+        } catch (SQLException e) {
+            rollback(); // Откат в случае ошибки
+            e.printStackTrace();
+        }
+    }
+
+    // Метод для отката транзакции
+    private void rollback() {
+        try {
+            conn.rollback();
         } catch (SQLException e) {
             e.printStackTrace();
         }
